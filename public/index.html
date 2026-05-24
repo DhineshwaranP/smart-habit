@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Habit Tracking</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-brand" onclick="showPage('landing-page')" style="cursor: pointer;">Smart Habit</div>
+        <div class="nav-actions">
+            <select id="theme-selector" class="theme-select" onchange="changeTheme(this.value)">
+                <option value="light">☀️ Light</option>
+                <option value="dark">🌙 Dark</option>
+                <option value="lavender">🌸 Lavender</option>
+                <option value="sage">🌿 Sage</option>
+                <option value="amber">🍯 Amber</option>
+            </select>
+            <ul class="nav-links hidden" id="nav-links">
+                <li><a href="#" onclick="showPage('dashboard')">Dashboard</a></li>
+                <li><a href="#" onclick="showPage('habits')">Manage Habits</a></li>
+                <li><a href="#" onclick="showPage('progress')">Progress</a></li>
+                <li><a href="#" onclick="showPage('rewards')">Rewards</a></li>
+                <li><a href="#" onclick="showPage('notifications')">Notifications</a></li>
+                <li><a href="#" onclick="logout()" class="logout-btn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main id="app-container">
+        
+        <!-- Landing Page -->
+        <section id="landing-page" class="page active">
+            <div class="landing-content">
+                <h1>Build Better Habits. <br><span>Gamify Your Life.</span></h1>
+                <p>Smart Habit Tracking helps you stay consistent through time-based reminders, beautiful progress tracking, and engaging rewards.</p>
+                <div class="features-list">
+                    <div class="feature">✅ Time-based Check-ins</div>
+                    <div class="feature">🔥 Streak Tracking</div>
+                    <div class="feature">🏆 Gamified Rewards</div>
+                </div>
+                <button class="btn primary-btn" onclick="showPage('auth-page')">Get Started</button>
+            </div>
+        </section>
+
+        <!-- Auth Page -->
+        <section id="auth-page" class="page">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <h2 id="auth-title">Login</h2>
+                    <form id="auth-form" onsubmit="handleAuth(event)">
+                        <div class="input-group" id="name-group" style="display: none;">
+                            <label>Name</label>
+                            <input type="text" id="auth-name" placeholder="John Doe">
+                        </div>
+                        <div class="input-group">
+                            <label>Email</label>
+                            <input type="email" id="auth-email" placeholder="you@example.com" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Password</label>
+                            <input type="password" id="auth-password" placeholder="••••••••" required>
+                        </div>
+                        <p id="auth-error" class="error-msg"></p>
+                        <button type="submit" class="btn primary-btn full-width" id="auth-submit">Login</button>
+                    </form>
+                    <p class="auth-switch">
+                        <span id="auth-switch-text">Don't have an account?</span>
+                        <a href="#" onclick="toggleAuthMode()">Sign up</a>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Page -->
+        <section id="dashboard" class="page">
+            <div class="dashboard-header">
+                <h2>Welcome back, <span id="user-greeting">User</span>! 👋</h2>
+                <p>Here's your habit overview for today.</p>
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon orange">🔥</div>
+                    <div class="stat-info">
+                        <p>Current Streak</p>
+                        <h3 id="streak-count">0 Days</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <p>Completed Today</p>
+                        <h3 id="completed-count">0/0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Today's Habits</h3>
+                </div>
+                <div class="habit-list" id="today-habits-list">
+                    <!-- Habits will be injected here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Habits Management Page -->
+        <section id="habits" class="page">
+            <div class="page-header">
+                <h2>Manage Habits</h2>
+                <button class="btn primary-btn" onclick="toggleHabitForm()">+ Add Habit</button>
+            </div>
+            
+            <form id="habit-form" class="card hidden" onsubmit="addHabit(event)">
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Habit Name</label>
+                        <input type="text" id="habit-name" required placeholder="e.g., Read 20 pages">
+                    </div>
+                    <div class="input-group">
+                        <label>Check-in Time</label>
+                        <input type="time" id="habit-time" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn primary-btn">Save Habit</button>
+            </form>
+
+            <div class="card">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Habit</th>
+                            <th>Time</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-habits-list">
+                        <!-- Habits will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Progress Page -->
+        <section id="progress" class="page">
+            <div class="page-header">
+                <h2>Progress Tracking</h2>
+                <p>Visualize your consistency.</p>
+            </div>
+            <div class="card text-center empty-state">
+                <div class="empty-icon">📊</div>
+                <h3>Analytics Coming Soon</h3>
+                <p>Keep checking in daily to build your data!</p>
+            </div>
+        </section>
+
+        <!-- Rewards Page -->
+        <section id="rewards" class="page">
+            <div class="page-header">
+                <h2>Rewards & Achievements</h2>
+                <p>Unlock badges as you progress.</p>
+            </div>
+            <div class="badges-grid">
+                <div class="badge-card unlocked">
+                    <div class="badge-icon">⭐</div>
+                    <h4>First Step</h4>
+                    <p>Completed your first habit</p>
+                </div>
+                <div class="badge-card locked">
+                    <div class="badge-icon">🔥</div>
+                    <h4>3-Day Streak</h4>
+                    <p>Maintain a 3-day streak</p>
+                </div>
+                <div class="badge-card locked">
+                    <div class="badge-icon">🏆</div>
+                    <h4>Perfect Week</h4>
+                    <p>7 consecutive days</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Notifications Page -->
+        <section id="notifications" class="page">
+            <div class="page-header">
+                <h2>Notifications</h2>
+            </div>
+            <div class="notifications-list">
+                <div class="notification-card">
+                    <div class="notif-icon primary">💡</div>
+                    <div class="notif-content">
+                        <p class="notif-text">Remember to drink water today!</p>
+                        <span class="notif-time">Just now</span>
+                    </div>
+                </div>
+                <div class="notification-card">
+                    <div class="notif-icon pink">❤️</div>
+                    <div class="notif-content">
+                        <p class="notif-text">You're doing great. Keep up the momentum!</p>
+                        <span class="notif-time">2 hours ago</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
