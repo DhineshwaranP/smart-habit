@@ -2,3 +2,4 @@ node_modules/
 habits.db
 .env
 .DS_Store
+*.zip
