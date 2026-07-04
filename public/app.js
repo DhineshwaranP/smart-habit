@@ -21,13 +21,27 @@ function showToast(message) {
     setTimeout(() => toast.classList.add('hidden'), 2800);
 }
 
+function clearStoredSession(message = 'Your saved login expired. Please sign in again.') {
+    currentUser = null;
+    currentDashboard = null;
+    currentHabits = [];
+    localStorage.removeItem('smartHabitUser');
+    showPage('auth-page');
+    showToast(message);
+}
+
 async function api(url, options = {}) {
     const res = await fetch(url, {
         ...options,
         headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Request failed');
+    if (!res.ok) {
+        if (res.status === 404 && data.error === 'User not found' && currentUser) {
+            clearStoredSession();
+        }
+        throw new Error(data.error || 'Request failed');
+    }
     return data;
 }
 

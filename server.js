@@ -263,8 +263,25 @@ function getMailTransporter() {
         host,
         port: Number(process.env.SMTP_PORT || 587),
         secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
+        family: 4,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         auth: { user, pass }
     });
+}
+
+function friendlyMailError(err) {
+    if (err.code === 'EAUTH') {
+        return 'Email login failed. Use a Gmail App Password, not your normal Gmail password.';
+    }
+    if (['ETIMEDOUT', 'ESOCKET', 'ECONNECTION'].includes(err.code) || /timeout/i.test(err.message || '')) {
+        return 'Email server connection timed out. Check SMTP_HOST, SMTP_PORT, SMTP_SECURE, and Render environment variables.';
+    }
+    if (err.code === 'ENETUNREACH') {
+        return 'Email network connection failed. The server could not reach the SMTP host.';
+    }
+    return err.message || 'Email delivery failed';
 }
 
 async function sendEmailNotification(user, subject, message) {
@@ -286,7 +303,7 @@ async function deliverExternalNotification(notification, subject) {
     try {
         delivery_status.email = await sendEmailNotification(user, subject, notification.message);
     } catch (err) {
-        delivery_status.email = { sent: false, error: err.message };
+        delivery_status.email = { sent: false, error: friendlyMailError(err), detail: err.code || err.command || '' };
     }
     store.updateNotificationDelivery(notification.id, delivery_status);
     return delivery_status;
