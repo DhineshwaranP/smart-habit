@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run Smart Habit App",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "env": {
+        "PORT": "3000",
+        "HOST": "0.0.0.0",
+        "DATABASE_PATH": "./habits-data.json",
+        "JWT_SECRET": "local-vscode-dev-secret"
+      },
+      "serverReadyAction": {
+        "pattern": "Server is running locally at (http://localhost:[0-9]+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    }
+  ]
+}

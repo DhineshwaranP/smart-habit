@@ -1,17 +1,27 @@
 {
-  "name": "smart-habit-tracker",
+  "name": "smart-skill-tracking-job-matching",
   "version": "1.0.0",
-  "description": "Smart Habit Tracking with Gamified Application",
+  "description": "Smart Skill Tracking and Job Matching for Career Guidance",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "start": "node server.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.18.2",
-    "sqlite3": "^5.1.6"
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.1.1",
+    "morgan": "^1.10.0",
+    "nodemailer": "^9.0.3"
   }
 }

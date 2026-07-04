@@ -5,25 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Habit Tracking</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-
-    <!-- Navigation Bar -->
-    <nav class="navbar" id="navbar">
-        <div class="nav-brand" onclick="showPage('landing-page')" style="cursor: pointer;">Smart Habit</div>
+    <nav class="navbar">
+        <button class="brand-button" onclick="showPage(currentUser ? 'dashboard' : 'landing-page')" aria-label="Smart Habit home">
+            <span class="brand-mark">SH</span>
+            <span>Smart Habit</span>
+        </button>
         <div class="nav-actions">
-            <select id="theme-selector" class="theme-select" onchange="changeTheme(this.value)">
-                <option value="light">☀️ Light</option>
-                <option value="dark">🌙 Dark</option>
-                <option value="lavender">🌸 Lavender</option>
-                <option value="sage">🌿 Sage</option>
-                <option value="amber">🍯 Amber</option>
+            <select id="theme-selector" class="theme-select" onchange="changeTheme(this.value)" aria-label="Theme selector">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="sage">Sage</option>
+                <option value="amber">Amber</option>
             </select>
             <ul class="nav-links hidden" id="nav-links">
                 <li><a href="#" onclick="showPage('dashboard')">Dashboard</a></li>
-                <li><a href="#" onclick="showPage('habits')">Manage Habits</a></li>
-                <li><a href="#" onclick="showPage('progress')">Progress</a></li>
+                <li><a href="#" onclick="showPage('habits')">Habits</a></li>
+                <li><a href="#" onclick="showPage('progress')">Analytics</a></li>
                 <li><a href="#" onclick="showPage('rewards')">Rewards</a></li>
                 <li><a href="#" onclick="showPage('notifications')">Notifications</a></li>
                 <li><a href="#" onclick="logout()" class="logout-btn">Logout</a></li>
@@ -31,186 +33,198 @@
         </div>
     </nav>
 
-    <!-- Main Container -->
     <main id="app-container">
-        
-        <!-- Landing Page -->
-        <section id="landing-page" class="page active">
-            <div class="landing-content">
-                <h1>Build Better Habits. <br><span>Gamify Your Life.</span></h1>
-                <p>Smart Habit Tracking helps you stay consistent through time-based reminders, beautiful progress tracking, and engaging rewards.</p>
-                <div class="features-list">
-                    <div class="feature">✅ Time-based Check-ins</div>
-                    <div class="feature">🔥 Streak Tracking</div>
-                    <div class="feature">🏆 Gamified Rewards</div>
-                </div>
+        <section id="landing-page" class="page active hero-page">
+            <div class="hero-copy">
+                <p class="eyebrow">AI-powered habit operating system</p>
+                <h1>Smart Habit Tracking</h1>
+                <p>Plan habits, answer intelligent check-ins, track streaks, earn rewards, and use personalized recommendations to stay consistent.</p>
                 <button class="btn primary-btn" onclick="showPage('auth-page')">Get Started</button>
+            </div>
+            <div class="hero-panel">
+                <div class="mini-chart"><span style="height:45%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:88%"></span><span style="height:78%"></span><span style="height:96%"></span><span style="height:82%"></span></div>
+                <div class="hero-stat"><strong>92%</strong><span>weekly consistency</span></div>
+                <div class="hero-stat"><strong>+240</strong><span>XP this month</span></div>
             </div>
         </section>
 
-        <!-- Auth Page -->
         <section id="auth-page" class="page">
             <div class="auth-container">
                 <div class="auth-card">
                     <h2 id="auth-title">Login</h2>
                     <form id="auth-form" onsubmit="handleAuth(event)">
-                        <div class="input-group" id="name-group" style="display: none;">
-                            <label>Name</label>
-                            <input type="text" id="auth-name" placeholder="John Doe">
+                        <div class="input-group" id="name-group" style="display:none">
+                            <label for="auth-name">Name</label>
+                            <input type="text" id="auth-name" placeholder="Aarav Sharma">
                         </div>
                         <div class="input-group">
-                            <label>Email</label>
+                            <label for="auth-email">Email</label>
                             <input type="email" id="auth-email" placeholder="you@example.com" required>
                         </div>
                         <div class="input-group">
-                            <label>Password</label>
-                            <input type="password" id="auth-password" placeholder="••••••••" required>
+                            <label for="auth-password">Password</label>
+                            <input type="password" id="auth-password" placeholder="Password" required>
                         </div>
                         <p id="auth-error" class="error-msg"></p>
                         <button type="submit" class="btn primary-btn full-width" id="auth-submit">Login</button>
                     </form>
-                    <p class="auth-switch">
-                        <span id="auth-switch-text">Don't have an account?</span>
-                        <a href="#" onclick="toggleAuthMode()">Sign up</a>
-                    </p>
+                    <p class="auth-switch"><span id="auth-switch-text">Don't have an account?</span> <a href="#" onclick="toggleAuthMode()">Sign up</a></p>
                 </div>
             </div>
         </section>
 
-        <!-- Dashboard Page -->
         <section id="dashboard" class="page">
-            <div class="dashboard-header">
-                <h2>Welcome back, <span id="user-greeting">User</span>! 👋</h2>
-                <p>Here's your habit overview for today.</p>
+            <div class="dashboard-header split-header">
+                <div>
+                    <p class="eyebrow">Today</p>
+                    <h2>Welcome back, <span id="user-greeting">User</span></h2>
+                    <p id="ai-recommendation">Loading your recommendation...</p>
+                </div>
+                <button class="btn secondary-btn" onclick="downloadReport()">Download PDF</button>
             </div>
-            
+
             <div class="stats-container">
-                <div class="stat-card">
-                    <div class="stat-icon orange">🔥</div>
-                    <div class="stat-info">
-                        <p>Current Streak</p>
-                        <h3 id="streak-count">0 Days</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon green">✅</div>
-                    <div class="stat-info">
-                        <p>Completed Today</p>
-                        <h3 id="completed-count">0/0</h3>
-                    </div>
-                </div>
+                <div class="stat-card"><span class="stat-icon fire">S</span><p>Current Streak</p><h3 id="streak-count">0 days</h3></div>
+                <div class="stat-card"><span class="stat-icon check">C</span><p>Completed Today</p><h3 id="completed-count">0/0</h3></div>
+                <div class="stat-card"><span class="stat-icon xp">XP</span><p>XP / Coins</p><h3 id="xp-count">0 / 0</h3></div>
+                <div class="stat-card"><span class="stat-icon score">AI</span><p>Productivity Score</p><h3 id="score-count">0</h3></div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3>Today's Habits</h3>
-                </div>
-                <div class="habit-list" id="today-habits-list">
-                    <!-- Habits will be injected here -->
-                </div>
+            <div class="dashboard-grid">
+                <section class="panel wide-panel">
+                    <div class="card-header"><h3>Smart Check-ins</h3><span id="today-date"></span></div>
+                    <div id="today-habits-list" class="habit-list"></div>
+                </section>
+                <aside class="panel">
+                    <div class="card-header"><h3>Mood</h3><span id="mood-summary">Not logged</span></div>
+                    <div class="mood-grid" id="mood-grid"></div>
+                </aside>
+                <section class="panel">
+                    <div class="card-header"><h3>Weekly Progress</h3><span id="completion-rate">0%</span></div>
+                    <div class="progress-ring"><span id="ring-value">0%</span></div>
+                    <div class="bar-list" id="weekly-bars"></div>
+                </section>
+                <section class="panel">
+                    <div class="card-header"><h3>Predictions</h3><span>Tomorrow</span></div>
+                    <div id="prediction-list" class="prediction-list"></div>
+                </section>                <section class="panel ai-panel">
+                    <div class="card-header"><h3>AI Habit Recommendation</h3><span>Smart</span></div>
+                    <p id="ai-habit-rec">Add habit data to get recommendations.</p>
+                </section>
+                <section class="panel ai-panel">
+                    <div class="card-header"><h3>Personalized Schedule</h3><span>Timing</span></div>
+                    <p id="ai-schedule">Complete habits to unlock timing suggestions.</p>
+                </section>
+                <section class="panel ai-panel">
+                    <div class="card-header"><h3>Failure Prediction</h3><span>Risk</span></div>
+                    <p id="ai-failure">No risks yet.</p>
+                </section>
+                <section class="panel ai-panel">
+                    <div class="card-header"><h3>Motivation</h3><span>AI</span></div>
+                    <p id="ai-motivation">One small win can restart momentum.</p>
+                </section>
+                <section class="panel ai-panel">
+                    <div class="card-header"><h3>Burnout Detection</h3><span>Wellbeing</span></div>
+                    <p id="ai-burnout">Burnout risk is low.</p>
+                </section>
+                <section class="panel ai-panel">
+                    <div class="card-header"><h3>AI Chat Assistant</h3><span>Coach</span></div>
+                    <form class="ai-chat-form" onsubmit="askAiAssistant(event)">
+                        <input id="ai-chat-question" placeholder="How can I become more consistent?">
+                        <button class="btn primary-btn" type="submit">Ask</button>
+                    </form>
+                    <p id="ai-chat-answer" class="ai-answer">Ask about study, streak, routine, or consistency.</p>
+                </section>
+                <section class="panel wide-panel">
+                    <div class="card-header"><h3>Challenges</h3><span>Gamification</span></div>
+                    <div class="challenge-grid">
+                        <p><strong>Daily:</strong> <span id="daily-challenge">Complete one high-priority habit today.</span></p>
+                        <p><strong>Weekly:</strong> <span id="weekly-challenge">Hit 70% completion.</span></p>
+                        <p><strong>Monthly:</strong> <span id="monthly-challenge">Earn 300 XP.</span></p>
+                    </div>
+                </section>
             </div>
         </section>
 
-        <!-- Habits Management Page -->
         <section id="habits" class="page">
-            <div class="page-header">
-                <h2>Manage Habits</h2>
-                <button class="btn primary-btn" onclick="toggleHabitForm()">+ Add Habit</button>
+            <div class="page-header split-header">
+                <div><h2>Habit Management</h2><p>Create, edit, archive, duplicate, search, filter, and sort habits.</p></div>
+                <button class="btn primary-btn" onclick="openHabitForm()">Add Habit</button>
             </div>
-            
-            <form id="habit-form" class="card hidden" onsubmit="addHabit(event)">
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Habit Name</label>
-                        <input type="text" id="habit-name" required placeholder="e.g., Read 20 pages">
-                    </div>
-                    <div class="input-group">
-                        <label>Check-in Time</label>
-                        <input type="time" id="habit-time" required>
-                    </div>
+            <form id="habit-form" class="panel hidden" onsubmit="saveHabit(event)">
+                <input type="hidden" id="habit-id">
+                <div class="form-grid">
+                    <div class="input-group"><label>Title</label><input type="text" id="habit-name" required placeholder="Read 20 pages"></div>
+                    <div class="input-group"><label>Reminder Time</label><input type="time" id="habit-time" required></div>
+                    <div class="input-group"><label>Category</label><select id="habit-category"></select></div>
+                    <div class="input-group"><label>Priority</label><select id="habit-priority"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+                    <div class="input-group"><label>Difficulty</label><select id="habit-difficulty"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
+                    <div class="input-group"><label>Repeat</label><select id="habit-repeat"><option>Daily</option><option>Weekly</option><option>Monthly</option></select></div>
+                    <div class="input-group"><label>Goal Days</label><input type="number" id="habit-goal" min="1" value="30"></div>
+                    <div class="input-group"><label>Color</label><input type="color" id="habit-color" value="#0ea5e9"></div>
+                    <div class="input-group full"><label>Description</label><textarea id="habit-description" rows="3" placeholder="What does success look like?"></textarea></div>
                 </div>
-                <button type="submit" class="btn primary-btn">Save Habit</button>
+                <div class="form-actions"><button type="button" class="btn ghost-btn" onclick="closeHabitForm()">Cancel</button><button class="btn primary-btn" type="submit">Save Habit</button></div>
             </form>
-
-            <div class="card">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Habit</th>
-                            <th>Time</th>
-                            <th class="text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="all-habits-list">
-                        <!-- Habits will be injected here -->
-                    </tbody>
-                </table>
+            <div class="toolbar panel compact-panel">
+                <input id="habit-search" placeholder="Search habits" oninput="loadHabits()">
+                <select id="filter-category" onchange="loadHabits()"><option value="">All Categories</option></select>
+                <select id="filter-priority" onchange="loadHabits()"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
+                <select id="filter-difficulty" onchange="loadHabits()"><option value="">All Difficulties</option><option>Easy</option><option>Medium</option><option>Hard</option></select>
+                <input id="filter-date" type="date" onchange="loadHabits()">
+                <select id="filter-status" onchange="loadHabits()"><option value="active">Active</option><option value="archived">Archived</option><option value="all">All</option></select>
+                <select id="sort-habits" onchange="loadHabits()"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="streak">Highest Streak</option><option value="completionRate">Completion Rate</option><option value="completion">Completion Count</option></select>
             </div>
+            <div class="panel"><div class="habit-table" id="all-habits-list"></div></div>
         </section>
 
-        <!-- Progress Page -->
         <section id="progress" class="page">
-            <div class="page-header">
-                <h2>Progress Tracking</h2>
-                <p>Visualize your consistency.</p>
+            <div class="page-header"><h2>Analytics</h2><p>Daily, weekly, monthly, yearly analytics with charts, calendar, predictions, and goal progress.</p></div>
+            <div class="stats-container analytics-stats">
+                <div class="stat-card"><span class="stat-icon check">D</span><p>Daily Rate</p><h3 id="daily-rate">0%</h3></div>
+                <div class="stat-card"><span class="stat-icon fire">W</span><p>Weekly Rate</p><h3 id="weekly-rate">0%</h3></div>
+                <div class="stat-card"><span class="stat-icon xp">M</span><p>Monthly Rate</p><h3 id="monthly-rate">0%</h3></div>
+                <div class="stat-card"><span class="stat-icon score">Y</span><p>Yearly Rate</p><h3 id="yearly-rate">0%</h3></div>
             </div>
-            <div class="card text-center empty-state">
-                <div class="empty-icon">📊</div>
-                <h3>Analytics Coming Soon</h3>
-                <p>Keep checking in daily to build your data!</p>
+            <div class="dashboard-grid">
+                <section class="panel wide-panel"><h3>GitHub-style Yearly Heat Map</h3><div class="heatmap" id="heatmap"></div></section>
+                <section class="panel"><h3>Category Performance</h3><div id="category-list" class="bar-list"></div></section>
+                <section class="panel"><h3>Recent Activity</h3><div id="recent-activity" class="activity-list"></div></section>
+                <section class="panel"><h3>Core Metrics</h3><div class="metric-list"><p>Consistency Score <strong id="consistency-score">0</strong></p><p>Average Completion <strong id="average-completion">0%</strong></p><p>Best Habit <strong id="best-habit">-</strong></p><p>Weakest Habit <strong id="weakest-habit">-</strong></p></div></section>
+                <section class="panel"><h3>Time & Mood Analysis</h3><p id="time-analysis">No time analysis yet.</p><p id="mood-impact">Log mood to unlock mood insights.</p></section>
+                <section class="panel wide-panel"><h3>Goal Progress</h3><div id="goal-progress-list" class="bar-list"></div></section>
+                <section class="panel wide-panel"><h3>Interactive Calendar</h3><div class="calendar-grid" id="calendar-grid"></div></section>
             </div>
         </section>
 
-        <!-- Rewards Page -->
         <section id="rewards" class="page">
-            <div class="page-header">
-                <h2>Rewards & Achievements</h2>
-                <p>Unlock badges as you progress.</p>
-            </div>
-            <div class="badges-grid">
-                <div class="badge-card unlocked">
-                    <div class="badge-icon">⭐</div>
-                    <h4>First Step</h4>
-                    <p>Completed your first habit</p>
-                </div>
-                <div class="badge-card locked">
-                    <div class="badge-icon">🔥</div>
-                    <h4>3-Day Streak</h4>
-                    <p>Maintain a 3-day streak</p>
-                </div>
-                <div class="badge-card locked">
-                    <div class="badge-icon">🏆</div>
-                    <h4>Perfect Week</h4>
-                    <p>7 consecutive days</p>
-                </div>
-            </div>
+            <div class="page-header"><h2>Rewards & Achievements</h2><p>XP, coins, milestones, and badges update as you complete habits.</p></div>
+            <div class="badges-grid" id="badges-grid"></div>
         </section>
 
-        <!-- Notifications Page -->
         <section id="notifications" class="page">
-            <div class="page-header">
-                <h2>Notifications</h2>
-            </div>
-            <div class="notifications-list">
-                <div class="notification-card">
-                    <div class="notif-icon primary">💡</div>
-                    <div class="notif-content">
-                        <p class="notif-text">Remember to drink water today!</p>
-                        <span class="notif-time">Just now</span>
-                    </div>
+            <div class="page-header"><h2>Notifications</h2><p>Send habit reminders and summaries to Gmail/email.</p></div>
+            <form id="notification-settings-form" class="panel notification-settings" onsubmit="saveNotificationSettings(event)">
+                <div class="card-header"><h3>Delivery Settings</h3><span>Gmail / Email</span></div>
+                <div class="form-grid">
+                    <div class="input-group"><label>Gmail / Email</label><input type="email" id="notify-email" placeholder="you@gmail.com" required></div>
+                    <label class="toggle-row"><input type="checkbox" id="notify-email-enabled"> Send Email</label>
                 </div>
-                <div class="notification-card">
-                    <div class="notif-icon pink">❤️</div>
-                    <div class="notif-content">
-                        <p class="notif-text">You're doing great. Keep up the momentum!</p>
-                        <span class="notif-time">2 hours ago</span>
-                    </div>
+                <div class="form-actions">
+                    <button class="btn ghost-btn" type="button" onclick="sendTestNotification()">Send Test</button>
+                    <button class="btn primary-btn" type="submit">Save Settings</button>
                 </div>
-            </div>
+                <p class="settings-note">Email needs Gmail/SMTP credentials in `.env`.</p>
+            </form>
+            <div class="notifications-list" id="notifications-list"></div>
         </section>
-
     </main>
 
+    <div id="toast" class="toast hidden"></div>
     <script src="app.js"></script>
 </body>
 </html>
+
+
+
+

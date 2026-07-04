@@ -3,3 +3,4 @@ habits.db
 .env
 .DS_Store
 *.zip
+habits-data.json
