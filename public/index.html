@@ -203,7 +203,7 @@
         </section>
 
         <section id="notifications" class="page">
-            <div class="page-header"><h2>Notifications</h2><p>Send habit reminders and summaries to Gmail/email.</p></div>
+            <div class="page-header"><h2>Notifications</h2><p>Save habit reminders in-app, with optional Gmail/email delivery.</p></div>
             <form id="notification-settings-form" class="panel notification-settings" onsubmit="saveNotificationSettings(event)">
                 <div class="card-header"><h3>Delivery Settings</h3><span>Gmail / Email</span></div>
                 <div class="form-grid">
@@ -214,7 +214,7 @@
                     <button class="btn ghost-btn" type="button" onclick="sendTestNotification()">Send Test</button>
                     <button class="btn primary-btn" type="submit">Save Settings</button>
                 </div>
-                <p class="settings-note">Email needs Gmail/SMTP credentials in `.env`.</p>
+                <p class="settings-note">Email delivery is optional. On Render, enable it with EMAIL_DELIVERY_ENABLED=true and SMTP/Gmail environment variables.</p>
             </form>
             <div class="notifications-list" id="notifications-list"></div>
         </section>

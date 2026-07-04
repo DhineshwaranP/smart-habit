@@ -254,6 +254,10 @@ function aiRecommendation({ habits = [], logs = [], mood = null }) {
     return 'Start small today: complete the easiest habit first, then ride that momentum into the next one.';
 }
 
+function emailDeliveryEnabled() {
+    return String(process.env.EMAIL_DELIVERY_ENABLED || '').toLowerCase() === 'true';
+}
+
 function getMailTransporter() {
     const host = process.env.SMTP_HOST || (process.env.GMAIL_USER ? 'smtp.gmail.com' : '');
     const user = process.env.SMTP_USER || process.env.GMAIL_USER;
@@ -286,6 +290,7 @@ function friendlyMailError(err) {
 
 async function sendEmailNotification(user, subject, message) {
     if (!user?.email || !user.notify_email) return { skipped: true, reason: 'Email notifications disabled or email missing' };
+    if (!emailDeliveryEnabled()) return { skipped: true, reason: 'Email delivery is off. In-app notifications are saved.' };
     const transporter = getMailTransporter();
     if (!transporter) return { skipped: true, reason: 'SMTP/Gmail credentials not configured' };
     await transporter.sendMail({
@@ -385,7 +390,7 @@ app.post('/api/notifications/test', async (req, res) => {
         const notification = store.addNotification({
             user_id: user.id,
             type: 'test',
-            message: 'Smart Habit test notification. Your Gmail/email notification settings are connected.',
+            message: 'Smart Habit test notification created. In-app notifications are working.',
             action_payload: { test: true }
         });
         const delivery = await deliverExternalNotification(notification, 'Smart Habit Test Notification');
