@@ -9,5 +9,15 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: HOST
+        value: 0.0.0.0
       - key: DATABASE_PATH
-        value: /opt/render/project/src/data/habits.db
+        value: /opt/render/project/src/data/habits-data.json
+      - key: JWT_SECRET
+        sync: false
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
