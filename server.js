@@ -4,7 +4,6 @@ const path = require('path');
 const os = require('os');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const store = require('./database');
 
 const app = express();
@@ -258,48 +257,46 @@ function emailDeliveryEnabled() {
     return String(process.env.EMAIL_DELIVERY_ENABLED || '').toLowerCase() === 'true';
 }
 
-function getMailTransporter() {
-    const host = process.env.SMTP_HOST || (process.env.GMAIL_USER ? 'smtp.gmail.com' : '');
-    const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-    const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
-    if (!host || !user || !pass) return null;
-    return nodemailer.createTransport({
-        host,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
-        family: 4,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-        auth: { user, pass }
-    });
+function emailProviderConfig() {
+    return {
+        provider: String(process.env.EMAIL_PROVIDER || 'resend').toLowerCase(),
+        apiKey: process.env.RESEND_API_KEY || '',
+        from: process.env.EMAIL_FROM || process.env.RESEND_FROM || 'Smart Habit <onboarding@resend.dev>'
+    };
 }
 
 function friendlyMailError(err) {
-    if (err.code === 'EAUTH') {
-        return 'Email login failed. Use a Gmail App Password, not your normal Gmail password.';
-    }
-    if (['ETIMEDOUT', 'ESOCKET', 'ECONNECTION'].includes(err.code) || /timeout/i.test(err.message || '')) {
-        return 'Email server connection timed out. Check SMTP_HOST, SMTP_PORT, SMTP_SECURE, and Render environment variables.';
-    }
-    if (err.code === 'ENETUNREACH') {
-        return 'Email network connection failed. The server could not reach the SMTP host.';
-    }
     return err.message || 'Email delivery failed';
+}
+
+async function sendResendEmail({ apiKey, from }, user, subject, message) {
+    if (!apiKey) return { skipped: true, reason: 'RESEND_API_KEY is not configured' };
+    const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            from,
+            to: user.email,
+            subject,
+            text: message
+        })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(result.message || result.error || `Resend email failed with HTTP ${response.status}`);
+    }
+    return { sent: true, provider: 'resend', id: result.id, to: user.email };
 }
 
 async function sendEmailNotification(user, subject, message) {
     if (!user?.email || !user.notify_email) return { skipped: true, reason: 'Email notifications disabled or email missing' };
     if (!emailDeliveryEnabled()) return { skipped: true, reason: 'Email delivery is off. In-app notifications are saved.' };
-    const transporter = getMailTransporter();
-    if (!transporter) return { skipped: true, reason: 'SMTP/Gmail credentials not configured' };
-    await transporter.sendMail({
-        from: process.env.MAIL_FROM || process.env.SMTP_USER || process.env.GMAIL_USER,
-        to: user.email,
-        subject,
-        text: message
-    });
-    return { sent: true, to: user.email };
+    const config = emailProviderConfig();
+    if (config.provider !== 'resend') return { skipped: true, reason: `Unsupported email provider: ${config.provider}` };
+    return sendResendEmail(config, user, subject, message);
 }
 
 async function deliverExternalNotification(notification, subject) {
@@ -308,7 +305,7 @@ async function deliverExternalNotification(notification, subject) {
     try {
         delivery_status.email = await sendEmailNotification(user, subject, notification.message);
     } catch (err) {
-        delivery_status.email = { sent: false, error: friendlyMailError(err), detail: err.code || err.command || '' };
+        delivery_status.email = { sent: false, error: friendlyMailError(err), provider: emailProviderConfig().provider };
     }
     store.updateNotificationDelivery(notification.id, delivery_status);
     return delivery_status;
@@ -335,6 +332,26 @@ function awardBadges(userId, habit, completedToday) {
 }
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+app.get('/api/snapshot/:userId', (req, res) => {
+    try {
+        const snapshot = store.getUserSnapshot(req.params.userId);
+        if (!snapshot) return res.status(404).json({ error: 'User not found' });
+        res.json(snapshot);
+    } catch (err) {
+        sendError(res, err, err.status || 500);
+    }
+});
+
+app.post('/api/snapshot/restore', (req, res) => {
+    try {
+        const snapshot = store.restoreUserSnapshot(req.body.snapshot || req.body);
+        res.json(snapshot);
+    } catch (err) {
+        sendError(res, err, err.status || 500);
+    }
+});
+
 
 app.post('/api/signup', async (req, res) => {
     try {

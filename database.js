@@ -241,6 +241,60 @@ function addRewardIfMissing(userId, badge_name, streak = 0) {
     save();
     return reward;
 }
+function recalculateCounters() {
+    Object.keys(defaultState.counters).forEach((collection) => {
+        state.counters[collection] = Math.max(0, ...state[collection].map((item) => Number(item.id) || 0));
+    });
+}
+
+function upsertById(collection, item) {
+    if (!item || item.id === undefined || item.id === null) return;
+    const normalized = { ...item, id: Number(item.id) };
+    const index = state[collection].findIndex((entry) => Number(entry.id) === normalized.id);
+    if (index >= 0) state[collection][index] = { ...state[collection][index], ...normalized };
+    else state[collection].push(normalized);
+}
+
+function getUserSnapshot(userId) {
+    const user = findUserById(userId);
+    if (!user) return null;
+    const habitIds = new Set(state.habits.filter((habit) => Number(habit.user_id) === Number(userId)).map((habit) => Number(habit.id)));
+    return {
+        version: 1,
+        saved_at: now(),
+        user: publicUser(user),
+        habits: state.habits.filter((habit) => Number(habit.user_id) === Number(userId)),
+        progress: state.progress.filter((log) => habitIds.has(Number(log.habit_id))),
+        rewards: state.rewards.filter((reward) => Number(reward.user_id) === Number(userId)),
+        mood_logs: state.mood_logs.filter((mood) => Number(mood.user_id) === Number(userId)),
+        notifications: state.notifications.filter((notification) => Number(notification.user_id) === Number(userId))
+    };
+}
+
+function restoreUserSnapshot(snapshot = {}) {
+    const user = snapshot.user;
+    if (!user?.id || !user?.email) {
+        const err = new Error('Snapshot is missing user data');
+        err.status = 400;
+        throw err;
+    }
+
+    const existing = findUserById(user.id) || findUserByEmail(user.email);
+    const restoredUser = {
+        ...(existing || {}),
+        ...user,
+        id: Number(user.id),
+        email: String(user.email).toLowerCase(),
+        password: existing?.password || user.password || ''
+    };
+    upsertById('users', restoredUser);
+    ['habits', 'progress', 'rewards', 'mood_logs', 'notifications'].forEach((collection) => {
+        (snapshot[collection] || []).forEach((item) => upsertById(collection, item));
+    });
+    recalculateCounters();
+    save();
+    return getUserSnapshot(restoredUser.id);
+}
 
 module.exports = {
     publicUser,
@@ -265,7 +319,9 @@ module.exports = {
     markNotificationRead,
     updateNotificationDelivery,
     listRewards,
-    addRewardIfMissing
+    addRewardIfMissing,
+    getUserSnapshot,
+    restoreUserSnapshot
 };
 
 

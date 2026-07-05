@@ -21,6 +21,80 @@ function showToast(message) {
     setTimeout(() => toast.classList.add('hidden'), 2800);
 }
 
+const PERSIST_DB = 'smartHabitPersistence';
+const PERSIST_STORE = 'snapshots';
+
+function openPersistentStore() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(PERSIST_DB, 1);
+        request.onupgradeneeded = () => request.result.createObjectStore(PERSIST_STORE, { keyPath: 'key' });
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function writeSnapshotRecord(record) {
+    const db = await openPersistentStore();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(PERSIST_STORE, 'readwrite');
+        tx.objectStore(PERSIST_STORE).put(record);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    }).finally(() => db.close());
+}
+
+async function readSnapshotRecord(key) {
+    const db = await openPersistentStore();
+    return new Promise((resolve, reject) => {
+        const request = db.transaction(PERSIST_STORE, 'readonly').objectStore(PERSIST_STORE).get(key);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+    }).finally(() => db.close());
+}
+
+async function savePersistentSnapshot(snapshot) {
+    if (!snapshot?.user?.id) return;
+    const record = { key: `user-${snapshot.user.id}`, snapshot, savedAt: new Date().toISOString() };
+    await writeSnapshotRecord(record);
+    await writeSnapshotRecord({ ...record, key: 'active' });
+}
+
+async function readPersistentSnapshot(userId = currentUser?.id) {
+    const record = userId ? await readSnapshotRecord(`user-${userId}`) : await readSnapshotRecord('active');
+    return record?.snapshot || null;
+}
+
+async function persistServerSnapshot() {
+    if (!currentUser?.id) return;
+    try {
+        const snapshot = await api(`/api/snapshot/${currentUser.id}`, { skipRestore: true });
+        await savePersistentSnapshot(snapshot);
+    } catch (err) {
+        console.warn('Unable to persist snapshot:', err.message);
+    }
+}
+
+async function refreshPersistentSnapshot() {
+    currentDashboard = null;
+    await loadDashboard();
+}
+
+async function restoreServerSnapshot() {
+    const snapshot = await readPersistentSnapshot();
+    if (!snapshot?.user?.id) return false;
+    const res = await fetch('/api/snapshot/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ snapshot })
+    });
+    if (!res.ok) return false;
+    const restored = await res.json();
+    currentUser = { ...currentUser, ...restored.user };
+    localStorage.setItem('smartHabitUser', JSON.stringify(currentUser));
+    await savePersistentSnapshot(restored);
+    return true;
+}
+
 function clearStoredSession(message = 'Your saved login expired. Please sign in again.') {
     currentUser = null;
     currentDashboard = null;
@@ -31,14 +105,17 @@ function clearStoredSession(message = 'Your saved login expired. Please sign in 
 }
 
 async function api(url, options = {}) {
+    const { skipRestore = false, ...fetchOptions } = options;
     const res = await fetch(url, {
-        ...options,
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+        ...fetchOptions,
+        headers: { 'Content-Type': 'application/json', ...(fetchOptions.headers || {}) }
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        if (res.status === 404 && data.error === 'User not found' && currentUser) {
-            clearStoredSession();
+        if (!skipRestore && res.status === 404 && data.error === 'User not found' && currentUser) {
+            const restored = await restoreServerSnapshot();
+            if (restored) return api(url, { ...fetchOptions, skipRestore: true });
+            clearStoredSession('No saved data was found. Please sign in again.');
         }
         throw new Error(data.error || 'Request failed');
     }
@@ -99,6 +176,7 @@ async function loadDashboard() {
     localStorage.setItem('smartHabitUser', JSON.stringify(currentUser));
     currentHabits = currentDashboard.habits.filter((habit) => !habit.archived);
     renderDashboard();
+    persistServerSnapshot();
 }
 
 function renderDashboard() {
@@ -302,7 +380,7 @@ async function saveHabit(event) {
         closeHabitForm();
         showToast(id ? 'Habit updated' : 'Habit created');
         await loadHabits();
-        currentDashboard = null;
+        await refreshPersistentSnapshot();
     } catch (err) {
         showToast(err.message);
     } finally {
@@ -355,20 +433,23 @@ function renderHabitTable() {
 async function archiveHabit(id) {
     await api(`/api/habits/${id}/archive`, { method: 'POST', body: '{}' });
     showToast('Habit status updated');
-    loadHabits();
+    await loadHabits();
+    await refreshPersistentSnapshot();
 }
 
 async function duplicateHabit(id) {
     await api(`/api/habits/${id}/duplicate`, { method: 'POST', body: '{}' });
     showToast('Habit duplicated');
-    loadHabits();
+    await loadHabits();
+    await refreshPersistentSnapshot();
 }
 
 async function deleteHabit(id) {
     if (!confirm('Delete this habit and its progress history?')) return;
     await api(`/api/habits/${id}`, { method: 'DELETE' });
     showToast('Habit deleted');
-    loadHabits();
+    await loadHabits();
+    await refreshPersistentSnapshot();
 }
 
 async function ensureDashboard() {
@@ -530,9 +611,16 @@ function changeTheme(themeName) {
     root.style.setProperty('--border-color', border);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     populateSelects();
     changeTheme(localStorage.getItem('theme') || 'light');
+    if (!currentUser) {
+        const snapshot = await readPersistentSnapshot(null).catch(() => null);
+        if (snapshot?.user) {
+            currentUser = snapshot.user;
+            localStorage.setItem('smartHabitUser', JSON.stringify(currentUser));
+        }
+    }
     if (currentUser) showPage('dashboard');
 });
 
