@@ -203,19 +203,7 @@
         </section>
 
         <section id="notifications" class="page">
-            <div class="page-header"><h2>Notifications</h2><p>Save habit reminders in-app, with optional Resend email delivery.</p></div>
-            <form id="notification-settings-form" class="panel notification-settings" onsubmit="saveNotificationSettings(event)">
-                <div class="card-header"><h3>Delivery Settings</h3><span>Resend Email</span></div>
-                <div class="form-grid">
-                    <div class="input-group"><label>Email Address</label><input type="email" id="notify-email" placeholder="you@example.com" required></div>
-                    <label class="toggle-row"><input type="checkbox" id="notify-email-enabled"> Send Email</label>
-                </div>
-                <div class="form-actions">
-                    <button class="btn ghost-btn" type="button" onclick="sendTestNotification()">Send Test</button>
-                    <button class="btn primary-btn" type="submit">Save Settings</button>
-                </div>
-                <p class="settings-note">Email delivery uses Resend. On Render, set EMAIL_DELIVERY_ENABLED=true, RESEND_API_KEY, and EMAIL_FROM.</p>
-            </form>
+            <div class="page-header"><h2>Notifications</h2><p>Habit reminders, progress updates, and achievements are saved in-app.</p></div>
             <div class="notifications-list" id="notifications-list"></div>
         </section>
     </main>

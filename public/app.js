@@ -131,7 +131,7 @@ function showPage(pageId) {
     if (pageId === 'habits') loadHabits();
     if (pageId === 'progress') renderAnalytics();
     if (pageId === 'rewards') renderRewards();
-    if (pageId === 'notifications') { renderNotificationSettings(); renderNotifications(); }
+    if (pageId === 'notifications') renderNotifications();
 }
 
 function toggleAuthMode() {
@@ -509,65 +509,17 @@ async function renderRewards() {
     document.getElementById('badges-grid').innerHTML = badges.map(([name, desc]) => `<article class="badge-card ${earned.has(name) ? 'unlocked' : 'locked'}"><div class="badge-icon">${earned.has(name) ? 'Unlocked' : 'Locked'}</div><h4>${name}</h4><p>${desc}</p></article>`).join('');
 }
 
-function renderNotificationSettings() {
-    if (!currentUser) return;
-    const email = document.getElementById('notify-email');
-    const emailEnabled = document.getElementById('notify-email-enabled');
-    if (!email) return;
-    email.value = currentUser.email || '';
-    emailEnabled.checked = Boolean(Number(currentUser.notify_email ?? 1));
-}
-
-function notificationSettingsPayload() {
-    return {
-        email: document.getElementById('notify-email').value,
-        notify_email: document.getElementById('notify-email-enabled').checked,
-    };
-}
-
-async function persistNotificationSettings(showSavedToast = true) {
-    const updatedUser = await api(`/api/users/${currentUser.id}/notification-settings`, {
-        method: 'PUT',
-        body: JSON.stringify(notificationSettingsPayload())
-    });
-    currentUser = { ...currentUser, ...updatedUser };
-    localStorage.setItem('smartHabitUser', JSON.stringify(currentUser));
-    currentDashboard = null;
-    if (showSavedToast) showToast('Notification settings saved');
-    await loadDashboard();
-    renderNotificationSettings();
-}
-
-async function saveNotificationSettings(event) {
-    event.preventDefault();
-    try {
-        await persistNotificationSettings(true);
-        renderNotifications();
-    } catch (err) {
-        showToast(err.message);
-    }
-}
-
-async function sendTestNotification() {
-    try {
-        await persistNotificationSettings(false);
-        const result = await api('/api/notifications/test', { method: 'POST', body: JSON.stringify({ user_id: currentUser.id }) });
-        const emailStatus = result.delivery?.email?.sent ? 'email sent' : (result.delivery?.email?.reason || result.delivery?.email?.error || 'email skipped');
-        showToast(`Test notification: ${emailStatus}`);
-        currentDashboard = null;
-        await loadDashboard();
-        renderNotifications();
-    } catch (err) {
-        showToast(err.message);
-    }
-}
-
 function deliveryText(item) {
-    const status = item.delivery_status || {};
-    const email = status.email?.sent ? 'Email sent' : (status.email?.reason || status.email?.error || 'Email pending');
-    return email;
+    const labels = {
+        reminder: 'Reminder saved',
+        completed: 'Completion update',
+        missed: 'Missed habit update',
+        snooze: 'Snoozed reminder',
+        achievement: 'Achievement update',
+        test: 'In-app notification'
+    };
+    return labels[item.type] || 'In-app notification';
 }
-
 async function renderNotifications() {
     await ensureDashboard();
     renderNotificationSettings();

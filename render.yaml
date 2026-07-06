@@ -15,11 +15,3 @@ services:
         value: /opt/render/project/src/data/habits-data.json
       - key: JWT_SECRET
         sync: false
-      - key: EMAIL_DELIVERY_ENABLED
-        value: false
-      - key: EMAIL_PROVIDER
-        value: resend
-      - key: RESEND_API_KEY
-        sync: false
-      - key: EMAIL_FROM
-        value: Smart Habit <onboarding@resend.dev>

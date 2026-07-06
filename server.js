@@ -253,72 +253,9 @@ function aiRecommendation({ habits = [], logs = [], mood = null }) {
     return 'Start small today: complete the easiest habit first, then ride that momentum into the next one.';
 }
 
-function emailDeliveryEnabled() {
-    return String(process.env.EMAIL_DELIVERY_ENABLED || '').toLowerCase() === 'true';
-}
-
-function emailProviderConfig() {
-    return {
-        provider: String(process.env.EMAIL_PROVIDER || 'resend').toLowerCase(),
-        apiKey: process.env.RESEND_API_KEY || '',
-        from: process.env.EMAIL_FROM || process.env.RESEND_FROM || 'Smart Habit <onboarding@resend.dev>'
-    };
-}
-
-function friendlyMailError(err) {
-    return err.message || 'Email delivery failed';
-}
-
-async function sendResendEmail({ apiKey, from }, user, subject, message) {
-    if (!apiKey) return { skipped: true, reason: 'RESEND_API_KEY is not configured' };
-    const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            from,
-            to: user.email,
-            subject,
-            text: message
-        })
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        throw new Error(result.message || result.error || `Resend email failed with HTTP ${response.status}`);
-    }
-    return { sent: true, provider: 'resend', id: result.id, to: user.email };
-}
-
-async function sendEmailNotification(user, subject, message) {
-    if (!user?.email || !user.notify_email) return { skipped: true, reason: 'Email notifications disabled or email missing' };
-    if (!emailDeliveryEnabled()) return { skipped: true, reason: 'Email delivery is off. In-app notifications are saved.' };
-    const config = emailProviderConfig();
-    if (config.provider !== 'resend') return { skipped: true, reason: `Unsupported email provider: ${config.provider}` };
-    return sendResendEmail(config, user, subject, message);
-}
-
-async function deliverExternalNotification(notification, subject) {
-    const user = store.findUserById(notification.user_id);
-    const delivery_status = { email: null };
-    try {
-        delivery_status.email = await sendEmailNotification(user, subject, notification.message);
-    } catch (err) {
-        delivery_status.email = { sent: false, error: friendlyMailError(err), provider: emailProviderConfig().provider };
-    }
-    store.updateNotificationDelivery(notification.id, delivery_status);
-    return delivery_status;
-}
-
 function addNotification(userId, habitId, type, message, payload = {}) {
-    const notification = store.addNotification({ user_id: userId, habit_id: habitId || null, type, message, action_payload: payload });
-    deliverExternalNotification(notification, `Smart Habit: ${type}`).catch((err) => {
-        store.updateNotificationDelivery(notification.id, { external_error: err.message });
-    });
-    return notification;
+    return store.addNotification({ user_id: userId, habit_id: habitId || null, type, message, action_payload: payload });
 }
-
 function awardBadges(userId, habit, completedToday) {
     const badges = [];
     if (completedToday === 1) badges.push(['First Step', 1]);
@@ -385,37 +322,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.put('/api/users/:id/notification-settings', (req, res) => {
-    try {
-        const patch = {
-            email: String(req.body.email || '').toLowerCase().trim(),
-            notify_email: req.body.notify_email ? 1 : 0,
-        };
-        if (!patch.email) return res.status(400).json({ error: 'Email is required' });
-        const user = store.updateUser(req.params.id, patch);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(user);
-    } catch (err) {
-        sendError(res, err);
-    }
-});
-
-app.post('/api/notifications/test', async (req, res) => {
-    try {
-        const user = store.findUserById(req.body.user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const notification = store.addNotification({
-            user_id: user.id,
-            type: 'test',
-            message: 'Smart Habit test notification created. In-app notifications are working.',
-            action_payload: { test: true }
-        });
-        const delivery = await deliverExternalNotification(notification, 'Smart Habit Test Notification');
-        res.json({ notification: store.markNotificationRead(notification.id) || notification, delivery });
-    } catch (err) {
-        sendError(res, err);
-    }
-});
 app.get('/api/dashboard/:userId', (req, res) => {
     try {
         const dashboard = buildDashboard(req.params.userId);
