@@ -522,7 +522,6 @@ function deliveryText(item) {
 }
 async function renderNotifications() {
     await ensureDashboard();
-    renderNotificationSettings();
     const list = currentDashboard?.notifications || [];
     document.getElementById('notifications-list').innerHTML = list.length ? list.map((item) => `<article class="notification-card ${item.read ? 'read' : ''}"><div class="notif-icon">${item.type.slice(0, 2).toUpperCase()}</div><div><p>${escapeHtml(item.message)}</p><span>${new Date(item.created_at).toLocaleString()}</span><small>${escapeHtml(deliveryText(item))}</small></div></article>`).join('') : '<div class="empty-state">No notifications yet.</div>';
 }
